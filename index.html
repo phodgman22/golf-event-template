@@ -341,7 +341,7 @@ import { FORMATS, coursePar, playingHandicaps, teamHandicaps,
          computeHoleResult, roundTotals, fmtToPar, strokesOnHole,
          collectPlayerHoles, summarisePlayer,
          scoreCell, grossCap, DEFAULT_MAX_RULE, formatOf, formatFor,
-         gameHandicaps, matchStatus, skinsForRound } from "./scoring.js";
+         gameHandicaps, matchStatus, skinsForRound, rollingBestBallTotals } from "./scoring.js";
 import { isAdminCode } from "./admin-pins.js";
 
 const DB_PATH = "covidcup";
@@ -1304,6 +1304,52 @@ function skinsSectionHtml(base, roundId){
     "</div>" + rows + pending;
 }
 
+// Rolling best ball's own team standings, alongside the round's normal (per-player)
+// leaderboard above. Teams here are scoring buckets only (state.groups, same UI as any
+// other team format) — they never appear in a tee time, since each player has his own card
+// and can be in a different foursome than his own teammates. Empty string until at least
+// one team has a score posted.
+function rollingBestBallSectionHtml(base, roundId){
+  const f = FORMATS[base.round.format];
+  if (f?.family !== "rolling-best-ball") return "";
+  const holes = base.course.holes || [];
+  const teams = cfg.groups?.[roundId] || {};
+  const teamIds = Object.keys(teams).filter(gid => (teams[gid].playerIds || []).length);
+  if (!teamIds.length) return "";
+
+  const bestCount = (+base.round.rollingBestCount > 0) ? +base.round.rollingBestCount : 4;
+
+  const standing = teamIds.map(gid => {
+    const memberIds = teams[gid].playerIds || [];
+    const unitScores = {}, ctxs = {};
+    memberIds.forEach(pid => {
+      unitScores[pid] = scores?.[roundId]?.["p-" + pid] || {};
+      ctxs[pid] = { memberIds: [pid], playerPhs: base.playerPhs, holeCount: base.holeCount, maxRule: base.maxRule, maxPlus: base.maxPlus };
+    });
+    const { perHole, total } = rollingBestBallTotals(base.round.format, holes, unitScores, ctxs, bestCount);
+    const thru = perHole.filter(h => h.score != null).length;
+    return { gid, memberIds, name: teams[gid].name, total, thru };
+  });
+
+  if (!standing.some(s => s.thru > 0)) return "";
+
+  standing.sort((a, b) => a.total - b.total || b.thru - a.thru);
+
+  // Not tappable like the other leaderboard rows above — a rolling best ball "team" is a
+  // scoring bucket with no card or tee time of its own (its players each have their own,
+  // scattered across whatever foursomes they're in), so there's no single card to open.
+  const rows = '<table class="lboard"><tr class="head"><th class="nm">Team</th><th>Total</th><th>Thru</th></tr>' +
+    standing.map(s =>
+      "<tr>" +
+        nameCell(s.memberIds, s.name) +
+        '<td class="num tot">' + (s.thru ? s.total : "&ndash;") + "</td>" +
+        '<td class="thru">' + (s.thru === holes.length ? "F" : (s.thru || "&ndash;")) + "</td></tr>").join("") +
+    "</table>";
+
+  return '<div class="board-sub" style="margin-top:14px;">Rolling best ball &middot; best ' +
+    bestCount + " of the team</div>" + rows;
+}
+
 function renderRoundBoard(el, roundId){
   const base = roundContext(roundId);
   if (!base){ el.innerHTML = boardShell("", '<p class="board-empty">This round has no course yet.</p>'); return; }
@@ -1344,7 +1390,7 @@ function renderRoundBoard(el, roundId){
         "</tr>").join("") +
     "</table>";
 
-  el.innerHTML = boardShell(sub, table + skinsSectionHtml(base, roundId));
+  el.innerHTML = boardShell(sub, table + rollingBestBallSectionHtml(base, roundId) + skinsSectionHtml(base, roundId));
 }
 
 // Hole context for one side of a match.

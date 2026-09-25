@@ -645,6 +645,23 @@ function renderRounds(){
       </div>
       <p class="hint" style="margin:8px 0 12px;">${formatSummary(r)}</p>
 
+      ${f.family === "rolling-best-ball" ? `
+      <h3 class="step">Rolling best ball</h3>
+      <div class="row" style="align-items:flex-end;">
+        <div style="flex:0 0 140px;">
+          <label>Count best</label>
+          <input type="number" min="1" max="50" data-rf="rollingBestCount"
+            class="${isPending("rollingBestCount", id) ? "needs-review" : ""}" value="${r.rollingBestCount ?? 4}">
+        </div>
+        <p class="hint" style="margin:0 0 9px;">of each team's scores on every hole.</p>
+      </div>
+      <p class="hint rolling-best-hint" style="margin:4px 0 12px;">Every player plays his own ball. On each hole, only
+        the lowest <b>${+r.rollingBestCount > 0 ? r.rollingBestCount : 4}</b> scores from anywhere across the
+        team count toward its total &mdash; the rest don't matter, however many foursomes the team is
+        split across. A hole with fewer scores in than that still counts, using whatever's posted so
+        far; the total just firms up as the rest of the team finishes.</p>
+      ` : ""}
+
       ${f.gross ? "" : (() => {
         const hasHcpCap = r.maxHcpStrokes != null && r.maxHcpStrokes !== "";
         return `<h3 class="step">Handicap</h3>
@@ -740,9 +757,18 @@ function renderRounds(){
       const rf = inp.dataset.rf;
       r[rf] = inp.type === "checkbox" ? inp.checked : inp.value;
       if (rf === "maxScore") confirmField("maxScore", id);
+      if (rf === "rollingBestCount") confirmField("rollingBestCount", id);
       // Free-typed fields keep focus; anything that changes the card's shape re-renders it.
       if (["name", "maxPlus", "ctpHoles", "ldHoles", "maxHcpStrokes"].includes(rf)){
         if (rf === "maxHcpStrokes") renderRoster();
+        return;
+      }
+      if (rf === "rollingBestCount"){
+        inp.classList.remove("needs-review");
+        // Patch just the hint's number in place — a full re-render would drop focus
+        // mid-keystroke, same reason maxPlus/ctpHoles/ldHoles skip it above.
+        const hint = box.querySelector(".rolling-best-hint b");
+        if (hint) hint.textContent = (+inp.value > 0 ? inp.value : 4);
         return;
       }
       renderRounds();
@@ -753,6 +779,10 @@ function renderRounds(){
     box.querySelectorAll('select[data-rf="maxScore"]').forEach(sel => sel.addEventListener("click", () => {
       confirmField("maxScore", id);
       sel.classList.remove("needs-review");
+    }));
+    box.querySelectorAll('input[data-rf="rollingBestCount"]').forEach(inp => inp.addEventListener("click", () => {
+      confirmField("rollingBestCount", id);
+      inp.classList.remove("needs-review");
     }));
 
     const current = FORMATS[r.format] || FORMATS[DEFAULT_FORMAT];
@@ -873,6 +903,10 @@ function renderRoundSetup(roundId, wrap){
   if (!round) return;
   const f = FORMATS[formatOf(round, state.event)] || FORMATS[DEFAULT_FORMAT];
   const individual = f.unit === "player";
+  // Rolling best ball scores per-player (like Individual) but still buckets players into
+  // teams for standings — the team grid stays available even though it's not the scoring
+  // unit and never appears in a tee time.
+  const showTeams = !individual || f.bigTeams;
   const match = round.play === "match";
 
   state.groups[roundId] = state.groups[roundId] || {};
@@ -895,12 +929,14 @@ function renderRoundSetup(roundId, wrap){
     if (!hcps) return "&mdash;";
     if (f.gross) return "0";
     if (f.teamHcp) return hcps.teamPhs[u] ?? "&mdash;";
-    return (units[u]?.playerIds || []).map(pid => hcps.playerPhs[pid] ?? "&mdash;").join(" &middot; ");
+    // Team rows for a bigTeams format aren't keyed into `units` (which is player-keyed
+    // here), so fall back to the team roster itself for its members' individual handicaps.
+    return (units[u]?.playerIds || teams[u]?.playerIds || []).map(pid => hcps.playerPhs[pid] ?? "&mdash;").join(" &middot; ");
   };
 
   /* ---- teams ---- */
   let teamsHtml;
-  if (individual){
+  if (!showTeams){
     teamsHtml = `
       <h3 class="step">Teams</h3>
       <p class="hint" style="margin:0 0 10px;">${esc(f.label)} is an individual format &mdash; every player
@@ -1163,7 +1199,8 @@ const TEAM_SIZE_HINT = {
   "shamble": "Shamble is usually played in teams of 2 to 4.",
   "scramble": "Scramble is usually played in teams of 2 to 4.",
   "alternate-shot": "Alternate shot is played in 2-man teams.",
-  "total": "Every player's score is added up, so any team size works."
+  "total": "Every player's score is added up, so any team size works.",
+  "rolling-best-ball": "Built for big teams split across several foursomes — put the whole team here, then place its players into whatever tee times fit."
 };
 
 // Every format being played across the rounds.
@@ -1203,7 +1240,7 @@ const reviewKey = (kind, roundId) => roundId ? `${kind}:${roundId}` : kind;
 const isPending = (kind, roundId) => pendingReview.has(reviewKey(kind, roundId));
 function confirmField(kind, roundId){ pendingReview.delete(reviewKey(kind, roundId)); }
 function seedRoundReview(roundId){
-  ["format", "play", "maxScore", "maxHcp", "skinsGross", "skinsUnit", "skinsCarry"].forEach(k => pendingReview.add(reviewKey(k, roundId)));
+  ["format", "play", "maxScore", "maxHcp", "rollingBestCount", "skinsGross", "skinsUnit", "skinsCarry"].forEach(k => pendingReview.add(reviewKey(k, roundId)));
 }
 function seedPendingReview(){
   pendingReview.clear();

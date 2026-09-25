@@ -8,7 +8,7 @@ const eq = (label, got, want) => {
 };
 
 console.log("\nformat table");
-eq("twelve formats", Object.keys(S.FORMATS).length, 12);
+eq("fourteen formats", Object.keys(S.FORMATS).length, 14);
 eq("every game has a net and a gross version",
    Object.keys(S.FORMAT_FAMILIES).every(fam =>
      Object.values(S.FORMATS).some(f => f.family === fam && !f.gross) &&

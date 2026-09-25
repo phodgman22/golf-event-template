@@ -121,7 +121,7 @@ optional extra is a legitimate resting state, not a default waiting to be confir
 
 ## Formats
 
-Twelve, defined in one place — the `FORMATS` table at the top of `scoring.js`. Six games
+Fourteen, defined in one place — the `FORMATS` table at the top of `scoring.js`. Seven games
 (`FORMAT_FAMILIES`), each playable **net or gross**. Gross versions give no handicap shots,
 so net and gross come out the same.
 
@@ -133,6 +133,7 @@ so net and gross come out the same.
 | Alternate shot | the team | one team score |
 | Aggregate | the team | one per player, all count |
 | Individual | each player | one per player |
+| Rolling best ball | each player, plus team standings | one per player, best N of the team count |
 
 **Format and play are set on each round** in the console: a Net / Gross switch, a Stroke play /
 Match play switch, then the six games as cards (`round.format`, `round.play`; defaults Best ball
@@ -154,6 +155,46 @@ day five. Teams, tee times and matches are set inside each round, so they can ch
 **Best ball and shamble wait for every partner** before a hole counts. The first score in
 can look like the team's result and then change when the partner's lands, so nothing is
 decided off a half-filled hole — the same rule the Michigan app uses.
+
+**Rolling best ball is the one format where the "team" is bigger than any single group.**
+Built for something like two 10-player teams split across several foursomes at once — no
+foursome can hold a 10-man card, so the format is structured completely differently from
+every other team format:
+
+- `unit: "player"`, same as Individual — **every player has his own card and his own tee
+  time**, scored exactly like Individual at the single-player level (`computeHoleResult`
+  treats `"rolling-best-ball"` the same as `"individual"` — see the comment there). Storage,
+  tee times, and the base leaderboard all just work, unmodified, because unit is `"player"`.
+- `bigTeams: true` (a new flag, only this format sets it) tells admin.html to show the Teams
+  grid anyway, **despite unit being `"player"`** — every other format ties team-building
+  visibility straight to `unit === "group"` (`renderRoundSetup`'s `individual` flag); this is
+  the one exception, tracked separately as `showTeams = !individual || f.bigTeams`. The teams
+  built here (`state.groups[roundId]`) are pure scoring buckets: a team's `playerIds` never
+  appear in a tee time, and `hcpText()` needed a fallback (`teams[u]?.playerIds`) since the
+  usual `units[u]?.playerIds` lookup is player-keyed here, not team-keyed.
+- **`round.rollingBestCount`** (default 4 when unset) is a new per-round number, editable
+  right under the format hint whenever `f.family === "rolling-best-ball"`. It's the N in
+  "best N of however many are on the team." Needs-review tracked like every other genuine
+  setting; typing into it patches just the hint's number in place rather than triggering a
+  full re-render, the same trick the team-weighting inputs use, so focus doesn't drop
+  mid-keystroke.
+- **`rollingBestBallTotals()`** in scoring.js does the actual roll-up, **per hole**: for every
+  hole, gather whichever of the team's players have posted a score so far (via each player's
+  own `"p-<id>"` storage), sort by net score, and sum the lowest `bestCount` of them as the
+  team's score for that hole. **A hole with fewer players posted than `bestCount` still
+  counts** — it just uses whatever's in, and the total naturally firms up as more of the team
+  finishes. This is deliberate, not a bug: unlike skins (which needs a stable, final answer
+  for who won a hole, so it waits for everyone), a running total is fine to revise upward as
+  more scores land — that's what a live leaderboard total already does everywhere else in
+  this app.
+- The player app's `rollingBestBallSectionHtml()` renders team standings underneath the
+  round's normal per-player leaderboard (`renderRoundBoard`, stroke play only — this format
+  isn't wired into match play's board, though nothing stops a round from being set to both;
+  it would just score individual match play with no team roll-up shown). Rows aren't
+  tappable — a team here has no single card or tee time to open, unlike every other
+  leaderboard row in the app.
+- Any number of teams works, not just two — `rollingBestBallTotals()` and the standings
+  table don't assume exactly two sides.
 
 ## Event style
 
@@ -268,9 +309,10 @@ on every course. A player who plays different tees on different courses isn't su
                             holes: [{number, par, si}], tees: [{name, rating, slope, yards}] } }
   /roster   { <playerId>: { name, index, tee, email, code, commissioner? } }
   /rounds   { <roundId>: { name, courseId, format, play, order, maxScore, maxPlus?,
-                           maxHcpStrokes?, ctpOn, ctpHoles, ldOn, ldHoles,
+                           maxHcpStrokes?, rollingBestCount?, ctpOn, ctpHoles, ldOn, ldHoles,
                            skinsOn?, skinsGross?, skinsUnit?, skinsCarry? } }
-  /groups   { <roundId>: { <teamId>: { name, playerIds: [...] } } }    teams (team formats)
+  /groups   { <roundId>: { <teamId>: { name, playerIds: [...] } } }    teams (team formats,
+                           and rolling best ball's scoring-only buckets)
   /teeTimes { <roundId>: { <teeTimeId>: { start, unitIds: [...] } } }  who goes out together
   /matches  { <roundId>: { <matchId>: { unitIds: [a, b] } } }          match play only
 

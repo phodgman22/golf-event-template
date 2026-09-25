@@ -6,11 +6,15 @@
 
 /* ---------- formats ---------- */
 
-// family  — the game being played; a game's net and gross versions share a family
-// gross   — scored off actual strokes, with no handicap shots at all
-// unit    — what appears as a leaderboard row: the whole team, or each player
-// entry   — how many scores get entered per hole: one for the team, or one per player
-// teamHcp — a single team ball, netted off a combined team handicap
+// family    — the game being played; a game's net and gross versions share a family
+// gross     — scored off actual strokes, with no handicap shots at all
+// unit      — what appears as a leaderboard row: the whole team, or each player
+// entry     — how many scores get entered per hole: one for the team, or one per player
+// teamHcp   — a single team ball, netted off a combined team handicap
+// bigTeams  — unit is "player" (each player has his own card and tee time, same as
+//             Individual) but the console still offers team-building, because standings
+//             are rolled up per team elsewhere (see rollingBestBallTotals). The team here
+//             is a scoring bucket, never a shared card or a single tee time.
 export const FORMATS = {
   "best-ball-net":        { label: "Best ball (net)",         family: "best-ball",      gross: false, unit: "group",  entry: "player", teamHcp: false },
   "best-ball-gross":      { label: "Best ball (gross)",       family: "best-ball",      gross: true,  unit: "group",  entry: "player", teamHcp: false },
@@ -23,7 +27,9 @@ export const FORMATS = {
   "total-net":            { label: "Aggregate (net)",         family: "total",          gross: false, unit: "group",  entry: "player", teamHcp: false },
   "total-gross":          { label: "Aggregate (gross)",       family: "total",          gross: true,  unit: "group",  entry: "player", teamHcp: false },
   "individual-net":       { label: "Individual (net)",        family: "individual",     gross: false, unit: "player", entry: "player", teamHcp: false },
-  "individual-gross":     { label: "Individual (gross)",      family: "individual",     gross: true,  unit: "player", entry: "player", teamHcp: false }
+  "individual-gross":     { label: "Individual (gross)",      family: "individual",     gross: true,  unit: "player", entry: "player", teamHcp: false },
+  "rolling-best-ball-net":   { label: "Rolling best ball (net)",   family: "rolling-best-ball", gross: false, unit: "player", entry: "player", teamHcp: false, bigTeams: true },
+  "rolling-best-ball-gross": { label: "Rolling best ball (gross)", family: "rolling-best-ball", gross: true,  unit: "player", entry: "player", teamHcp: false, bigTeams: true }
 };
 
 // The games, in the order the console offers them, with the plain-English line a
@@ -34,7 +40,8 @@ export const FORMAT_FAMILIES = {
   "shamble":        { label: "Shamble",        blurb: "Pick the best drive, then everyone plays his own ball in. The team takes the best score." },
   "alternate-shot": { label: "Alternate shot", blurb: "Partners take turns hitting one ball. One team score." },
   "total":          { label: "Aggregate",      blurb: "Everyone plays his own ball, and every player's score on the hole is added up for the team." },
-  "individual":     { label: "Individual",     blurb: "Classic stroke play. Every player is on his own." }
+  "individual":     { label: "Individual",     blurb: "Classic stroke play. Every player is on his own." },
+  "rolling-best-ball": { label: "Rolling best ball", blurb: "Big teams split across several foursomes. Everyone plays his own ball, and on each hole the team counts only its best few scores from anywhere across the whole team." }
 };
 
 export const DEFAULT_FORMAT = "best-ball-net";
@@ -299,7 +306,10 @@ export function computeHoleResult(format, hole, entry, ctx){
 
   if (!results.length) return null;
 
-  if (f.family === "individual"){
+  // Rolling best ball scores exactly like individual at the single-player level — each
+  // "p-<id>" unit is one player's own card. The team roll-up (best N of the team's scores
+  // on a hole) happens above this, in rollingBestBallTotals, not here.
+  if (f.family === "individual" || f.family === "rolling-best-ball"){
     return { net: results[0].net, gross: results[0].gross };
   }
 
@@ -401,6 +411,50 @@ export function skinsForRound(format, holes, unitScores, ctxs, { carryOver = tru
   }
 
   return { perHole, totals, carry };
+}
+
+/* ---------- rolling best ball ---------- */
+
+/**
+ * One team's rolling best ball score for a round: on every hole, the team counts only its
+ * lowest `bestCount` scores from anywhere across the team, however many foursomes its
+ * players are split into. Built for big teams (e.g. 10 players in 2-3 foursomes) where no
+ * single physical group can hold the whole team's scorecard.
+ *
+ * unitScores: { playerId: { holeNumber: entry } } — same shape and storage `computeHoleResult`
+ *             already reads for an individual player's own "p-<id>" unit; pass every team
+ *             member's scores here, keyed by playerId.
+ * ctxs:       { playerId: ctx } — one-member ctx per player, same shape `computeHoleResult`
+ *             takes for an individual entry ({ memberIds: [playerId], playerPhs, ... }).
+ * bestCount:  how many of the team's scores count on each hole. A hole where fewer than
+ *             bestCount players have posted still counts, using whatever's in so far — the
+ *             total simply firms up as more of the team finishes, the same way any running
+ *             total does. Not a number (0, unset) means "count everyone who's posted."
+ *
+ * Returns { perHole: [{hole, counted:[playerId,...], score}], total }. `score` is null on a
+ * hole nobody on the team has posted yet; `counted` lists whose scores made the cut.
+ */
+export function rollingBestBallTotals(format, holes, unitScores, ctxs, bestCount){
+  const playerIds = Object.keys(unitScores || {});
+  const perHole = [];
+  let total = 0;
+
+  for (const h of (holes || [])){
+    const results = playerIds
+      .map(pid => ({ pid, res: unitScores[pid]?.[h.number] ? computeHoleResult(format, h, unitScores[pid][h.number], ctxs?.[pid]) : null }))
+      .filter(r => r.res);
+
+    if (!results.length){ perHole.push({ hole: h.number, counted: [], score: null }); continue; }
+
+    results.sort((a, b) => a.res.net - b.res.net);
+    const n = (+bestCount > 0) ? Math.min(+bestCount, results.length) : results.length;
+    const counted = results.slice(0, n);
+    const score = counted.reduce((sum, r) => sum + r.res.net, 0);
+    perHole.push({ hole: h.number, counted: counted.map(r => r.pid), score });
+    total += score;
+  }
+
+  return { perHole, total };
 }
 
 /**
