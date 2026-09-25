@@ -181,6 +181,21 @@ select.needs-review,input.needs-review{border-radius:6px;}
     <div class="row">
       <div><label>Event name</label><input id="eventName" placeholder="e.g. Smith Family Outing 2026"></div>
     </div>
+    <div class="row" style="align-items:flex-end;">
+      <div>
+        <label>Event style</label>
+        <div class="seg-admin" id="eventStyleSeg">
+          <button type="button" data-set-event-style="ryder-cup">Ryder Cup</button>
+          <button type="button" data-set-event-style="two-man-teams">2-Man Teams</button>
+          <button type="button" data-set-event-style="singles">Singles</button>
+        </div>
+      </div>
+    </div>
+    <p class="hint" id="eventStyleHint" style="margin:4px 0 12px;"></p>
+    <div class="row hidden" id="sidesRow">
+      <div><label>Side A name</label><input id="sideAName" placeholder="e.g. USA"></div>
+      <div><label>Side B name</label><input id="sideBName" placeholder="e.g. Europe"></div>
+    </div>
     <div class="row" id="hcpRow">
       <div>
         <label>Handicap allowance</label>
@@ -1192,9 +1207,20 @@ function seedRoundReview(roundId){
 }
 function seedPendingReview(){
   pendingReview.clear();
-  ["allowancePct", "allowanceMode", "teamHcpMode"].forEach(k => pendingReview.add(k));
+  ["allowancePct", "allowanceMode", "teamHcpMode", "eventStyle"].forEach(k => pendingReview.add(k));
   Object.keys(state.rounds).forEach(seedRoundReview);
 }
+
+// A high-level label for the whole event, set once. It doesn't hide or restrict any format
+// or team-size choice elsewhere in the console — every round still picks its own format
+// freely — it's a hint for the commissioner and a foundation for Ryder Cup's two-sided
+// structure (side names here; team assignment and the cross-round points race are separate,
+// not-yet-built features layered on top of this selection).
+const EVENT_STYLES = {
+  "ryder-cup":     { label: "Ryder Cup", hint: "Two rival teams face off across every round, with points totaled for an overall winner — think USA vs. Europe." },
+  "two-man-teams": { label: "2-Man Teams", hint: "Teams of two play together, scored against the whole field each round — the most common outing format." },
+  "singles":       { label: "Singles", hint: "Every player scores on his own, no teams involved." }
+};
 
 function renderEvent(){
   document.getElementById("eventName").value = state.event.name || "";
@@ -1204,6 +1230,16 @@ function renderEvent(){
   document.getElementById("allowancePct").classList.toggle("needs-review", isPending("allowancePct"));
   document.getElementById("allowanceMode").classList.toggle("needs-review", isPending("allowanceMode"));
   document.getElementById("teamHcpMode").classList.toggle("needs-review", isPending("teamHcpMode"));
+
+  const style = state.event.style;
+  const seg = document.getElementById("eventStyleSeg");
+  seg.classList.toggle("needs-review", isPending("eventStyle"));
+  seg.querySelectorAll("[data-set-event-style]").forEach(btn =>
+    btn.classList.toggle("active", btn.dataset.setEventStyle === style));
+  document.getElementById("eventStyleHint").textContent = EVENT_STYLES[style]?.hint || "Pick the style that best fits this event.";
+  document.getElementById("sidesRow").classList.toggle("hidden", style !== "ryder-cup");
+  document.getElementById("sideAName").value = state.event.sideAName || "";
+  document.getElementById("sideBName").value = state.event.sideBName || "";
 }
 
 function renderAll(){
@@ -1242,6 +1278,13 @@ document.getElementById("teamHcpMode").addEventListener("change", e => {
   confirmField("teamHcpMode"); e.target.classList.remove("needs-review");
   renderRoster(); renderRounds();
 });
+document.querySelectorAll("#eventStyleSeg [data-set-event-style]").forEach(btn => btn.addEventListener("click", () => {
+  state.event.style = btn.dataset.setEventStyle;
+  confirmField("eventStyle");
+  renderEvent();
+}));
+document.getElementById("sideAName").addEventListener("input", e => state.event.sideAName = e.target.value);
+document.getElementById("sideBName").addEventListener("input", e => state.event.sideBName = e.target.value);
 
 document.getElementById("addCourseBtn").addEventListener("click", () => {
   state.courses[uid()] = { name: "", location: "", holesCount: 18, holes: defaultHoles(18), tees: [] };

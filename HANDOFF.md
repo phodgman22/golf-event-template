@@ -155,6 +155,23 @@ day five. Teams, tee times and matches are set inside each round, so they can ch
 can look like the team's result and then change when the partner's lands, so nothing is
 decided off a half-filled hole — the same rule the Michigan app uses.
 
+## Event style
+
+A once-per-event label in the Event card (`event.style`: `"ryder-cup"`, `"two-man-teams"`, or
+`"singles"`), a three-way seg-admin toggle right under the event name, needs-review tracked
+like every other genuine either/or default. **It's a hint, not a restriction** — every round
+still picks its own format freely regardless of what's chosen here; nothing elsewhere in the
+console hides or filters based on it (yet).
+
+**Ryder Cup is the one style with real structure attached.** Choosing it reveals two side-name
+inputs (`event.sideAName`, `event.sideBName` — e.g. "USA" / "Europe") right below the toggle.
+That's as far as it goes today: **assigning players/teams to a side and totaling points for
+them across every round is a separate, not-yet-built feature.** The side names exist now so
+the foundation (the data field, the UI slot) is in place for that follow-up without a second
+migration. Don't assume `sideAName`/`sideBName` being set means side assignment or a points
+race actually work — check `usedFormats()` and the roster/round code for that before relying
+on it.
+
 ## Teams and tee times
 
 Two separate things, set per round in the console, on purpose:
@@ -245,7 +262,8 @@ on every course. A player who plays different tees on different courses isn't su
 
 ```
 /covidcup
-  /event    { name, allowancePct, allowanceMode, teamHcpMode, teamWeights? }
+  /event    { name, style?, sideAName?, sideBName?,
+              allowancePct, allowanceMode, teamHcpMode, teamWeights? }
   /courses  { <courseId>: { name, location, holesCount,
                             holes: [{number, par, si}], tees: [{name, rating, slope, yards}] } }
   /roster   { <playerId>: { name, index, tee, email, code, commissioner? } }
