@@ -1,10 +1,15 @@
-# Covid Cup 2026 — handoff notes
+# Golf event scoring template — handoff notes
 
 Context for whoever (or whichever Claude) picks this up next. Read this before making
 changes — a couple of the design choices below aren't obvious from the code alone.
 
-For what changed recently and what's left before the event, see
-[HANDOFF-FOR-PAT.md](HANDOFF-FOR-PAT.md).
+**This repo is a template**, not a live event. It was Covid Cup 2026 — a real 2026-09-26
+outing — through its full build and use; once that event finished, the live database was
+wiped, the roster was kept as sample data with fresh (non-working) codes, and the event
+was renamed "Template Version" so this repo can be forked for the next event without
+carrying over anyone's real names, scores, or login codes. [HANDOFF-FOR-PAT.md](HANDOFF-FOR-PAT.md)
+is kept as-is as a historical record of that build — it describes the real event, not this
+template's current state.
 
 ## What this is
 
@@ -14,22 +19,18 @@ does **not** carry over its fixed two-sided structure or its animations. A round
 **stroke play** (one flat leaderboard) or **match play** (entries paired into matches, scored
 hole by hole for points), chosen per round.
 
-It started as a single-round, twosomes-only app. It is now generalised: **any number of
-rounds, any number of courses, and teams of any size** (twosomes, threesomes, foursomes,
-mixed). That generalisation is deliberate — Covid Cup is a real event, but it doubles as
-the test bed for a customisable tournament framework, so hard-coding one event's shape is
-the thing to avoid.
-
-**Covid Cup itself is 2-man team net best ball, stroke play, double par maximum.** Set it
-up as one round in Best ball (net), build the 2-man teams, then put teams into tee times.
-Two teams playing together are two teams in one tee time, and one phone keeps both cards.
+It started as a single-round, twosomes-only app built for one specific event. It is now
+generalised: **any number of rounds, any number of courses, and teams of any size**
+(twosomes, threesomes, foursomes, mixed) — that generalisation is what makes it worth
+keeping as a template rather than a one-off, so hard-coding one event's shape is the thing
+to avoid going forward.
 
 ## Live URLs
 
-- Player view: https://phodgman22.github.io/Covid-Cup-2026/
-- Commissioner console: https://phodgman22.github.io/Covid-Cup-2026/admin.html
+- Player view: https://phodgman22.github.io/golf-event-template/
+- Commissioner console: https://phodgman22.github.io/golf-event-template/admin.html
   (the code is `ADMIN_PIN` in `admin-pins.js`. It's plain text in public source, so this is
-  a "keep casual players out" gate, not real security)
+  a "keep casual players out" gate, not real security — set a fresh one per event)
 
 `DEV_PINS` (`ADM1`, `ADM2` — short codes so Andrew and Pat could get in quickly while
 building) have been deleted now that the database is wiped and the app's been handed to a

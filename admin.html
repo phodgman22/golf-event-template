@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
-<title>Covid Cup 2026 &middot; Commissioner</title>
+<title>Template Version &middot; Commissioner</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Pirata+One&display=swap" rel="stylesheet">
@@ -154,7 +154,7 @@ select.needs-review,input.needs-review{border-radius:6px;}
 
 <div id="pinGate">
   <div class="box">
-    <h1>Covid Cup 2026</h1>
+    <h1>Template Version</h1>
     <p>Commissioner console &middot; enter PIN</p>
     <input id="pinInput" type="text" placeholder="Code" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false">
     <button class="primary" id="pinSubmit" style="width:100%">Enter</button>
@@ -164,7 +164,7 @@ select.needs-review,input.needs-review{border-radius:6px;}
 
 <div id="app" class="hidden">
 <header>
-  <h1>Covid Cup 2026 &middot; Commissioner</h1>
+  <h1>Template Version &middot; Commissioner</h1>
   <span style="display:flex;gap:14px;align-items:center;">
     <span class="status" id="loadStatus">loading&hellip;</span>
     <a href="index.html" class="hdr-link">Player app &rarr;</a>
@@ -179,7 +179,7 @@ select.needs-review,input.needs-review{border-radius:6px;}
   <div class="card">
     <h2>Event</h2>
     <div class="row">
-      <div><label>Event name</label><input id="eventName" placeholder="Covid Cup 2026"></div>
+      <div><label>Event name</label><input id="eventName" placeholder="e.g. Smith Family Outing 2026"></div>
     </div>
     <div class="row" id="hcpRow">
       <div>
@@ -292,7 +292,7 @@ if (FIREBASE_CONFIGURED) {
 }
 
 const state = {
-  event:   { name: "Covid Cup 2026", allowancePct: 90, allowanceMode: "full", teamHcpMode: "formula" },
+  event:   { name: "Template Version", allowancePct: 90, allowanceMode: "full", teamHcpMode: "formula" },
   courses: {}, // id -> { name, location, holesCount, holes:[{number,par,si,yards}], tees:[{name,rating,slope,yards}] }
   roster:  {}, // id -> { name, index, tee, code, commissioner? }
   rounds:  {}, // id -> { name, courseId, format, order }
@@ -539,7 +539,7 @@ function renderRoster(){
   list.querySelectorAll("[data-mail]").forEach(btn => btn.addEventListener("click", () => {
     const p = state.roster[btn.dataset.mail];
     if (!p?.email) return;
-    const event = state.event.name || "Covid Cup 2026";
+    const event = state.event.name || "Template Version";
     const link = location.href.replace(/admin\.html.*$/, "");
     const body =
       `${p.name},\n\n` +
@@ -1302,7 +1302,7 @@ function setImportStatus(msg, cls){
 // column headers alone — how the sheets link up, and the one silent-failure mode.
 function buildReadMeRows(){
   return [
-    ["Covid Cup — spreadsheet setup"],
+    ["Spreadsheet setup"],
     [""],
     ["Three sheets do the real work: Courses, Holes, Players. Fill them in, save the file, and"],
     ["upload it back in the console — Download template / Upload filled template."],

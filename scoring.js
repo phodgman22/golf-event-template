@@ -1,4 +1,4 @@
-// Shared scoring math for Covid Cup 2026. Pure functions — no DOM, no Firebase.
+// Shared scoring math for this event app. Pure functions — no DOM, no Firebase.
 //
 // Groups are any size (twosome, threesome, foursome, ...), not just pairs, and an
 // event can run any number of rounds. Every format below is scored onto ONE flat

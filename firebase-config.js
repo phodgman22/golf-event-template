@@ -1,4 +1,4 @@
-// Shared Firebase config for Covid Cup 2026 — imported by index.html and admin.html.
+// Shared Firebase config for this event app — imported by index.html and admin.html.
 // Replace with the real config from Firebase console (Project settings > Your apps).
 export const FIREBASE_CONFIG = {
   apiKey: "AIzaSyBt2lFnT185JhsbCEZuH0oUrR27iwKRPmI",

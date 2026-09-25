@@ -30,4 +30,4 @@ http.createServer((req, res) => {
     });
     res.end(buf);
   });
-}).listen(PORT, () => console.log(`Covid Cup dev server: http://localhost:${PORT}`));
+}).listen(PORT, () => console.log(`Dev server: http://localhost:${PORT}`));

@@ -1,13 +1,21 @@
-# Covid Cup 2026
+# Golf Event Scoring Template
 
-Live scoring for Covid Cup 2026 — a static web app on GitHub Pages, backed by a Firebase
-Realtime Database.
+A reusable template for live golf event scoring — a static web app on GitHub Pages, backed
+by a Firebase Realtime Database. Fork this repo for each new event, point it at a fresh
+Firebase project, and set the event up from the commissioner console; no other code changes
+needed.
 
-- Players: https://phodgman22.github.io/Covid-Cup-2026/
-- Commissioner console: https://phodgman22.github.io/Covid-Cup-2026/admin.html
+- Players: https://phodgman22.github.io/golf-event-template/
+- Commissioner console: https://phodgman22.github.io/golf-event-template/admin.html
 
-**Start here:** [HANDOFF-FOR-PAT.md](HANDOFF-FOR-PAT.md) — what's changed and what's left before
-the event. Full technical reference: [HANDOFF.md](HANDOFF.md).
+**Full technical reference:** [HANDOFF.md](HANDOFF.md) — architecture, data model, every
+format and setting, and the bugs already found and fixed (don't reintroduce them).
+
+To start a new event from this template:
+1. Create a new Firebase Realtime Database project and paste its config into
+   `firebase-config.js`; deploy `database.rules.json` to it.
+2. Set a real `ADMIN_PIN` in `admin-pins.js`.
+3. Set up the event from the commissioner console — event name, courses, roster, rounds.
 
 Run locally with `node serve.js`, then open http://localhost:8765. Scoring tests:
 `node tests/run.mjs`.

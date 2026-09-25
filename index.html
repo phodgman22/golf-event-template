@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
-<title>Covid Cup 2026</title>
+<title>Template Version</title>
 <link rel="manifest" href="site.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -240,7 +240,7 @@ footer{text-align:center;color:var(--dim);font-size:11px;padding:16px;}
 
 <div id="loginGate">
   <div class="box">
-    <h1>Covid Cup 2026</h1>
+    <h1>Template Version</h1>
     <p style="margin-top:6px;">Enter your player code</p>
     <p style="margin:-6px 0 12px;font-size:12px;color:var(--dim);">Commissioner? Your console code works here too.</p>
     <input id="codeInput" placeholder="CODE" autocomplete="off" maxlength="8">
@@ -258,7 +258,7 @@ footer{text-align:center;color:var(--dim);font-size:11px;padding:16px;}
   <button id="adminExit">Exit</button>
 </div>
 <header>
-  <h1 id="eventName">Covid Cup 2026</h1>
+  <h1 id="eventName">Template Version</h1>
   <div class="sub" id="eventSub">Loading event details&hellip;</div>
 </header>
 
@@ -457,7 +457,7 @@ function fillRoundSelect(el, { includeOverall = false } = {}){
 /* ---------- home ---------- */
 
 function renderHome(){
-  document.getElementById("eventName").textContent = cfg.event?.name || "Covid Cup 2026";
+  document.getElementById("eventName").textContent = cfg.event?.name || "Template Version";
 
   const rounds = orderedRounds();
   document.getElementById("eventSub").textContent = rounds.length
@@ -1220,7 +1220,7 @@ function nameCell(playerIds, teamName, cls = ""){
 
 function boardShell(sub, inner){
   return '<div class="board">' +
-    '<div class="board-title">' + esc(cfg.event?.name || "Covid Cup 2026") + "</div>" +
+    '<div class="board-title">' + esc(cfg.event?.name || "Template Version") + "</div>" +
     (sub ? '<div class="board-sub">' + sub + "</div>" : "") +
     '<div class="board-scroll">' + inner + "</div></div>" +
     '<p class="board-tip">Tap a name to see the scorecard &middot; &#10003; card submitted</p>';
