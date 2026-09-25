@@ -553,6 +553,20 @@ can read all of them out of the page. They solve "which player am I", nothing mo
    the hole strip never got their handlers. Anything wiring up the hole view must tolerate a
    missing button.
 
+5. **Unscoped localStorage/sessionStorage keys leaked between separate event copies of this
+   template.** Every GitHub Pages *project* site for the same user shares one browser origin
+   (`phodgman22.github.io/<repo>/...` are all the same origin, different paths only), and
+   `localStorage`/`sessionStorage` are scoped by origin, not path. A fixed key like
+   `"covidcup_admin_draft"` meant one event's unsaved local draft — or worse, its **unlocked
+   commissioner session** — silently applied to every other event's admin console or player
+   app opened in that same browser, discovered while forking this template for a second real
+   event. Fixed by namespacing every one of these keys with the Firebase project id
+   (`const NS = FIREBASE_CONFIG.projectId; ... "covidcup_admin:" + NS`, etc., in both
+   admin.html and index.html — keep the two lists of keys in sync). `DB_PATH`/`SCORES_PATH`/
+   `ATTEST_PATH` did **not** need this fix — those are Firebase RTDB paths, already isolated
+   by the project itself. Never add a new `localStorage`/`sessionStorage` key without
+   namespacing it the same way.
+
 ## Known gaps (not bugs, just not built yet)
 
 - **No anonymous auth.** Locking rules to `auth != null` would keep out anyone not using

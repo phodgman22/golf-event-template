@@ -346,9 +346,19 @@ import { isAdminCode } from "./admin-pins.js";
 
 const DB_PATH = "covidcup";
 const SCORES_PATH = "covidcup_scores";
-const ME_KEY = "covidcup_me";
 const ATTEST_PATH = "covidcup_attest";
-const ADMIN_KEY = "covidcup_admin";
+// localStorage/sessionStorage keys are namespaced by Firebase project id, not just
+// "covidcup" — every GitHub Pages project site for the same user shares one browser origin
+// (phodgman22.github.io), so a fixed key would leak one event's remembered player login,
+// and worse, its unlocked commissioner session, into every other event's app open in that
+// same browser. admin.html namespaces the same way — keep the two in sync.
+const NS = FIREBASE_CONFIG.projectId || "unconfigured";
+const ME_KEY = "covidcup_me:" + NS;
+const ADMIN_KEY = "covidcup_admin:" + NS;
+const ADMIN_SESSION_KEY = "covidcup_admin_ok:" + NS;
+const ADMIN_DRAFT_KEY = "covidcup_admin_draft:" + NS;
+const SCORES_DRAFT_KEY = "covidcup_scores_draft:" + NS;
+const ATTEST_DRAFT_KEY = "covidcup_attest_draft:" + NS;
 
 let db = null;
 let cfg = { event: {}, courses: {}, roster: {}, rounds: {}, groups: {} };
@@ -361,7 +371,7 @@ let scoreView = "hole";   // "hole", "card" or "review"
 // name tags rather than security (see admin-pins.js), and the flag is shared with the console.
 let isAdmin = false;
 try {
-  isAdmin = localStorage.getItem(ADMIN_KEY) === "1" || sessionStorage.getItem("covidcup_admin_ok") === "1";
+  isAdmin = localStorage.getItem(ADMIN_KEY) === "1" || sessionStorage.getItem(ADMIN_SESSION_KEY) === "1";
 } catch (e){}
 let loaded = false;
 
@@ -609,7 +619,7 @@ function writeAttest(roundId, unitId, value){
   if (!db){
     attests[roundId] = attests[roundId] || {};
     if (value) attests[roundId][unitId] = value; else delete attests[roundId][unitId];
-    localStorage.setItem("covidcup_attest_draft", JSON.stringify(attests));
+    localStorage.setItem(ATTEST_DRAFT_KEY, JSON.stringify(attests));
     return Promise.resolve();
   }
   return set(ref(db, `${ATTEST_PATH}/${roundId}/${unitId}`), value || null);
@@ -1083,7 +1093,7 @@ function queueScoreWrite(roundId, groupId, hole, field, value, immediate = false
   scores[roundId][groupId][hole][field] = value;
 
   if (!db){
-    localStorage.setItem("covidcup_scores_draft", JSON.stringify(scores));
+    localStorage.setItem(SCORES_DRAFT_KEY, JSON.stringify(scores));
     if (immediate) renderScorecard();
     return;
   }
@@ -1865,7 +1875,7 @@ function unlockAdmin(){
   isAdmin = true;
   try {
     localStorage.setItem(ADMIN_KEY, "1");
-    sessionStorage.setItem("covidcup_admin_ok", "1");
+    sessionStorage.setItem(ADMIN_SESSION_KEY, "1");
   } catch (e){}
 }
 
@@ -1904,7 +1914,7 @@ document.getElementById("adminPlayAs").addEventListener("change", e => {
 document.getElementById("adminExit").addEventListener("click", () => {
   try {
     localStorage.removeItem(ADMIN_KEY);
-    sessionStorage.removeItem("covidcup_admin_ok");
+    sessionStorage.removeItem(ADMIN_SESSION_KEY);
   } catch (e){}
   location.reload();
 });
@@ -1966,9 +1976,9 @@ if (FIREBASE_CONFIGURED){
     afterData();
   }, err => console.warn("Card submissions need the updated database rules:", err.message));
 } else {
-  try { cfg = JSON.parse(localStorage.getItem("covidcup_admin_draft") || "null") || cfg; } catch (e){}
-  try { scores = JSON.parse(localStorage.getItem("covidcup_scores_draft") || "null") || {}; } catch (e){}
-  try { attests = JSON.parse(localStorage.getItem("covidcup_attest_draft") || "null") || {}; } catch (e){}
+  try { cfg = JSON.parse(localStorage.getItem(ADMIN_DRAFT_KEY) || "null") || cfg; } catch (e){}
+  try { scores = JSON.parse(localStorage.getItem(SCORES_DRAFT_KEY) || "null") || {}; } catch (e){}
+  try { attests = JSON.parse(localStorage.getItem(ATTEST_DRAFT_KEY) || "null") || {}; } catch (e){}
   afterData();
 }
 

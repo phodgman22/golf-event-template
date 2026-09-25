@@ -297,7 +297,13 @@ import { FORMATS, coursePar, courseHandicap, playingHandicaps,
 import { ACCEPTED_PINS } from "./admin-pins.js";
 
 
-const LS_KEY = "covidcup_admin_draft";
+// Every localStorage/sessionStorage key below is namespaced by Firebase project id, not
+// just "covidcup" — every GitHub Pages project site for the same user shares one browser
+// origin (phodgman22.github.io), so a fixed key would leak one event's unsaved draft, and
+// worse, its unlocked commissioner session, into every other event's console open in that
+// same browser. index.html namespaces the same way — keep the two in sync.
+const NS = FIREBASE_CONFIG.projectId || "unconfigured";
+const LS_KEY = "covidcup_admin_draft:" + NS;
 const DB_PATH = "covidcup";
 
 let db = null;
@@ -1717,14 +1723,15 @@ document.getElementById("reloadBtn").addEventListener("click", () => location.re
 
 /* ---------- PIN gate ---------- */
 
-const ADMIN_SESSION_KEY = "covidcup_admin_ok";
+const ADMIN_SESSION_KEY = "covidcup_admin_ok:" + NS;
+const ADMIN_KEY = "covidcup_admin:" + NS;
 
 function unlock(){
   // Remembered on this device and shared with the player app's commissioner mode, so moving
   // between the two never asks for the code again. Exit in the player app forgets it.
   try {
     sessionStorage.setItem(ADMIN_SESSION_KEY, "1");
-    localStorage.setItem("covidcup_admin", "1");
+    localStorage.setItem(ADMIN_KEY, "1");
   } catch (e){}
   document.getElementById("pinGate").classList.add("hidden");
   document.getElementById("app").classList.remove("hidden");
@@ -1741,7 +1748,7 @@ document.getElementById("pinInput").addEventListener("keydown", e => { if (e.key
 
 let alreadyUnlocked = false;
 try {
-  alreadyUnlocked = sessionStorage.getItem(ADMIN_SESSION_KEY) === "1" || localStorage.getItem("covidcup_admin") === "1";
+  alreadyUnlocked = sessionStorage.getItem(ADMIN_SESSION_KEY) === "1" || localStorage.getItem(ADMIN_KEY) === "1";
 } catch (e){}
 if (alreadyUnlocked) unlock();
 </script>
